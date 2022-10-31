@@ -70,16 +70,26 @@ public class OIOResponse extends OIOAbstractResponse {
 	public String getOriginatingIdpEntityId(SessionHandler handler) {
 		if (response.getInResponseTo() == null) {
 			Issuer issuer = null;
+			Issuer issuerFromAssertion = null;
 			if (!response.getAssertions().isEmpty()) {
-				issuer = response.getAssertions().get(0).getIssuer();
+				issuerFromAssertion = response.getAssertions().get(0).getIssuer();
 			}
-			if (issuer == null) {
-				issuer = response.getIssuer();
-			}
+			Issuer issuerFromResponse = response.getIssuer();
+
+			issuer = issuerFromAssertion != null ? issuerFromAssertion : issuerFromResponse;
 
 			if (issuer == null) {
 				throw new ValidationException("SAML Response does not contain a issuer, this is required for unsolicited Responses");
 			}
+
+			if (issuerFromResponse == null) {
+				log.warn("SAML Response does not contain a issuer, this is required for unsolicited Responses (expected issuer: " 
+					+ issuerFromAssertion.getValue() + ")");
+			} else if (!issuerFromResponse.equals(issuerFromAssertion)) {
+				log.warn("Issuer from SAML Response (" + issuerFromResponse.getValue() + ") does not match issuer from SAML Assertion (" 
+					+ issuerFromAssertion.getValue() + "), this is required for unsolicited Responses");
+			}
+
 			return issuer.getValue();
 		}
 
