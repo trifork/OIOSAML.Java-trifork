@@ -126,6 +126,7 @@ public class SAMLAssertionConsumerHandler implements SAMLHandler {
 		if (log.isDebugEnabled())
 			log.debug("Got relayState..:" + relayState);
 
+		response.decryptAssertion(ctx.getCredential(), !ctx.getConfiguration().getBoolean(Constants.PROP_REQUIRE_ENCRYPTION, false));
 		String idpEntityId = response.getOriginatingIdpEntityId(ctx.getSessionHandler());
 		if (log.isDebugEnabled())
 			log.debug("Received SAML Response from " + idpEntityId + ": " + response.toXML());
@@ -134,7 +135,6 @@ public class SAMLAssertionConsumerHandler implements SAMLHandler {
 		Metadata metadata = ctx.getIdpMetadata().getMetadata(idpEntityId);
 
 		response.validateResponse(ctx.getSpMetadata().getAssertionConsumerServiceLocation(0), metadata.getValidCertificates(), allowPassive);
-		response.decryptAssertion(ctx.getCredential(), !ctx.getConfiguration().getBoolean(Constants.PROP_REQUIRE_ENCRYPTION, false));
 		response.validateAssertionSignature(metadata.getValidCertificates());
 
 		// if the copySessionListener is active (enabled in web.xml), we can copy attributes from sessions
