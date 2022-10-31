@@ -66,23 +66,41 @@ public class LogoutHandler implements SAMLHandler{
 		String entityID = assertion.getAssertion().getIssuer().getValue();
 		Metadata metadata = context.getIdpMetadata().getMetadata(entityID);
 
-		OIOLogoutRequest lr = OIOLogoutRequest.buildLogoutRequest(session, metadata.getSingleLogoutServiceLocation(), context.getSpMetadata().getEntityID(), context.getSessionHandler());
-		String redirectURL = lr.getRedirectRequestURL(context.getCredential());
-		
-		Audit.log(Operation.LOGOUTREQUEST, true, lr.getID(), lr.toXML());
+		String singleLogoutServiceLocation = metadata.getSingleLogoutServiceLocation();
+		if (singleLogoutServiceLocation != null) {
+			OIOLogoutRequest lr = OIOLogoutRequest.buildLogoutRequest(session, singleLogoutServiceLocation, context.getSpMetadata().getEntityID(), context.getSessionHandler());
+			String redirectURL = lr.getRedirectRequestURL(context.getCredential());
+			
+			Audit.log(Operation.LOGOUTREQUEST, true, lr.getID(), lr.toXML());
+	
+			context.getSessionHandler().registerRequest(lr.getID(), metadata.getEntityID());
+			context.getSessionHandler().logOut(session);
+			invokeAuthenticationHandler(context);
+	
+			if (log.isDebugEnabled()) log.debug("Redirect to..:" + redirectURL);
+			Audit.log(Operation.LOGOUT, assertion.getSubjectNameIDValue());
+	
+			// link outgoing request to existing session (SameSite=Lax support)
+			SAMLConfigurationFactory.getConfiguration().getSameSiteSessionSynchronizer().linkSession(lr.getID(), session.getId());
+	
+			context.getResponse().sendRedirect(redirectURL);
+		} else {
+			// No single logout service - must be logged in with unsolicited saml response
+			context.getSessionHandler().logOut(session);
+			invokeAuthenticationHandler(context);
+	
+			Audit.log(Operation.LOGOUT, assertion.getSubjectNameIDValue());
 
-		context.getSessionHandler().registerRequest(lr.getID(), metadata.getEntityID());
-		context.getSessionHandler().logOut(session);
-		
-		invokeAuthenticationHandler(context);
-
-		if (log.isDebugEnabled()) log.debug("Redirect to..:" + redirectURL);
-		Audit.log(Operation.LOGOUT, assertion.getSubjectNameIDValue());
-
-		// link outgoing request to existing session (SameSite=Lax support)
-		SAMLConfigurationFactory.getConfiguration().getSameSiteSessionSynchronizer().linkSession(lr.getID(), session.getId());
-
-		context.getResponse().sendRedirect(redirectURL);
+			String homeUrl = context.getConfiguration().getString(Constants.PROP_HOME);
+			if (homeUrl == null) homeUrl = context.getRequest().getContextPath();
+			if (log.isDebugEnabled()) {
+				log.debug("sendRedirect to..:" + homeUrl);
+			}
+			
+			// Go to the default page after logout
+			context.getResponse().sendRedirect(homeUrl);
+	
+		}
 	}
 
 	public void handlePost(RequestContext context) throws ServletException, IOException {
