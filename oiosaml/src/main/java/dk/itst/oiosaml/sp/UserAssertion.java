@@ -256,11 +256,17 @@ public interface UserAssertion {
 	
 	/**
 	 * For OCES person certificates, the most interesting attribute is the PID number which
-	 * contains a unique identifier for the person6. The advantage of PID numbers over CPR
+	 * contains a unique identifier for the person.
+	 * 
+	 * The advantage of PID numbers over CPR
 	 * numbers is that they can be freely exchanged without risk of violating personal data
 	 * protection acts.<br/>
+	 * 
 	 * Attribute name: dk:gov:saml:attribute:PidNumberIdentifier<br />
-	 * Mandatory in the OCES profile of DK-SAML 2.0.5
+	 * Attribute name: https://data.gov.dk/model/core/eid/person/pid<br />
+	 * First attribute is mandatory in the OCES profile since DK-SAML 2.0.5, and replaced by
+	 * the second attribute in DK-SAML 3, and later deprecated
+	 *  
 	 * @return The PID number from the OCES certificate presented to the IdP  
 	 */
 	public String getPIDNumber();
@@ -282,13 +288,35 @@ public interface UserAssertion {
 	public String getCPRNumber();
 	
 	/**
-	 * Attribute name: dk:gov:saml:attribute:RidNumberIdentifier<br /> 
+	 * Attribute name: dk:gov:saml:attribute:RidNumberIdentifier<br />
+	 * Attribute name: https://data.gov.dk/model/core/eid/professional/rid<br />
+	 *  
 	 * This attribute is mandatory when the user has authenticated with an employee
 	 * certificate (syntax and semantics of the number is defined in DS844).<br />
-	 * Mandatory for employees in the OCES profile of DK-SAML 2.0.5 
+	 * First attribute is mandatory for employees in the OCES profile since DK-SAML 2.0.5, and
+	 * replaced by the second attribute in DK-SAML 3, and now deprecated.
+	 * 
 	 * @return The employee number / PID of the employee if present, null otherwise.
 	 */
 	public String getRIDNumber();
+
+	/**
+	 * Attribute: https://data.gov.dk/model/core/eid/cprUuid
+	 * 
+	 * Introduced in DK-SAML 3.0, and contains the UUID of the Person.
+	 * 
+	 * @return The Person UUID
+	 */
+	public String getPersonUuid();
+	
+	/**
+	 * Attribute: https://data.gov.dk/model/core/eid/professional/uuid/persistent
+	 * 
+	 * Introduced in DK-SAML 3.0, and contains the UUID of the Professional
+	 *
+	 * @return The employee UUID
+	 */
+	public String getProfessionalUuid();
 	
 	/**
 	 * Returns the ID of the assertion.

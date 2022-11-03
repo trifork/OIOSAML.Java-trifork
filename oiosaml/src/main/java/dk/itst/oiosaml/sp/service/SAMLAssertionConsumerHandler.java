@@ -31,6 +31,8 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.commons.configuration.Configuration;
 import org.opensaml.saml2.core.Assertion;
+import org.opensaml.saml2.core.Response;
+import org.opensaml.xml.security.credential.Credential;
 
 import dk.itst.oiosaml.common.SAMLUtil;
 import dk.itst.oiosaml.configuration.SAMLConfigurationFactory;
@@ -44,9 +46,11 @@ import dk.itst.oiosaml.sp.UserAssertion;
 import dk.itst.oiosaml.sp.UserAssertionImpl;
 import dk.itst.oiosaml.sp.metadata.IdpMetadata.Metadata;
 import dk.itst.oiosaml.sp.model.OIOAssertion;
+import dk.itst.oiosaml.sp.model.OIOEncryptedAssertion;
 import dk.itst.oiosaml.sp.model.OIOResponse;
 import dk.itst.oiosaml.sp.model.RelayState;
 import dk.itst.oiosaml.sp.model.validation.AssertionValidator;
+import dk.itst.oiosaml.sp.model.validation.ValidationException;
 import dk.itst.oiosaml.sp.service.util.ArtifactExtractor;
 import dk.itst.oiosaml.sp.service.util.Constants;
 import dk.itst.oiosaml.sp.service.util.HTTPUtils;
@@ -125,8 +129,9 @@ public class SAMLAssertionConsumerHandler implements SAMLHandler {
 		if (log.isDebugEnabled())
 			log.debug("Got relayState..:" + relayState);
 
-		response.decryptAssertion(ctx.getCredential(), !ctx.getConfiguration().getBoolean(Constants.PROP_REQUIRE_ENCRYPTION, false));
-		String idpEntityId = response.getOriginatingIdpEntityId(ctx.getSessionHandler());
+		OIOAssertion decryptedAssertion = decryptAssertion(response.getResponse(), ctx.getCredential(), !ctx.getConfiguration().getBoolean(Constants.PROP_REQUIRE_ENCRYPTION, false));
+
+		String idpEntityId = response.getOriginatingIdpEntityId(ctx.getSessionHandler(), decryptedAssertion);
 		if (log.isDebugEnabled())
 			log.debug("Received SAML Response from " + idpEntityId + ": " + response.toXML());
 
@@ -134,6 +139,8 @@ public class SAMLAssertionConsumerHandler implements SAMLHandler {
 		Metadata metadata = ctx.getIdpMetadata().getMetadata(idpEntityId);
 
 		response.validateResponse(ctx.getSpMetadata().getAssertionConsumerServiceLocation(0), metadata.getValidCertificates(), allowPassive);
+		response.setDecryptedAssertion(decryptedAssertion);
+		// response.decryptAssertion(ctx.getCredential(), !ctx.getConfiguration().getBoolean(Constants.PROP_REQUIRE_ENCRYPTION, false));
 		response.validateAssertionSignature(metadata.getValidCertificates());
 
 		// if the copySessionListener is active (enabled in web.xml), we can copy attributes from sessions
@@ -209,4 +216,18 @@ public class SAMLAssertionConsumerHandler implements SAMLHandler {
 		log.debug("No authentication handler configured");
 		return true;
 	}
+
+	public OIOAssertion decryptAssertion(Response response, Credential credential, boolean allowUnencrypted) {
+		if (response.getEncryptedAssertions().size() > 0) {
+			OIOEncryptedAssertion enc = new OIOEncryptedAssertion(response.getEncryptedAssertions().get(0));
+			return enc.decryptAssertion(credential);
+		}
+		else {
+			if (!allowUnencrypted && !response.getAssertions().isEmpty()) {
+				throw new ValidationException("Assertion is not encrypted");
+			}
+			return null;
+		}
+	}
+
 }

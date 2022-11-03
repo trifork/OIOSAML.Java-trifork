@@ -27,6 +27,7 @@ import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.opensaml.saml2.core.Assertion;
 import org.opensaml.saml2.core.Issuer;
 import org.opensaml.saml2.core.Response;
 import org.opensaml.saml2.core.StatusCode;
@@ -63,17 +64,23 @@ public class OIOResponse extends OIOAbstractResponse {
 	 * 
 	 * @param handler
 	 *            Handler which holds sent request ids. This is used if the response has a InResponseTo.
+	 * @param decryptedAssertion
 	 * 
 	 * @throws ValidationException
 	 *             If the response is unsolicited and does not contain an issuer.
 	 */
 	public String getOriginatingIdpEntityId(SessionHandler handler) {
+		return getOriginatingIdpEntityId(handler, null);
+	}
+	
+	public String getOriginatingIdpEntityId(SessionHandler handler, OIOAssertion decryptedAssertion) {
 		if (response.getInResponseTo() == null) {
 			Issuer issuer = null;
-			Issuer issuerFromAssertion = null;
-			if (!response.getAssertions().isEmpty()) {
-				issuerFromAssertion = response.getAssertions().get(0).getIssuer();
-			}
+
+			Issuer issuerFromAssertion = response.getAssertions().isEmpty()
+				? decryptedAssertion.getAssertion().getIssuer()
+				: response.getAssertions().get(0).getIssuer();
+
 			Issuer issuerFromResponse = response.getIssuer();
 
 			issuer = issuerFromAssertion != null ? issuerFromAssertion : issuerFromResponse;
@@ -189,5 +196,12 @@ public class OIOResponse extends OIOAbstractResponse {
 		}
 
 		return StatusCode.NO_PASSIVE_URI.equals(response.getStatus().getStatusCode().getStatusCode().getValue());
+	}
+
+	public void setDecryptedAssertion(OIOAssertion decryptedAssertion) {
+		if (decryptedAssertion != null) {
+			this.assertion = decryptedAssertion;
+			response.getAssertions().add(assertion.getAssertion());
+		}
 	}
 }

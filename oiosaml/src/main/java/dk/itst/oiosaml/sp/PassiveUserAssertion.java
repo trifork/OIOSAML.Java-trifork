@@ -179,4 +179,11 @@ public class PassiveUserAssertion implements UserAssertion {
 		return null;
 	}
 
+	public String getPersonUuid() {
+		return null;
+	}
+
+	public String getProfessionalUuid() {
+		return null;
+	}
 }
