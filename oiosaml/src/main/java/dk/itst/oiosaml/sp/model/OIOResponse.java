@@ -75,13 +75,13 @@ public class OIOResponse extends OIOAbstractResponse {
 	
 	public String getOriginatingIdpEntityId(SessionHandler handler, OIOAssertion decryptedAssertion) {
 		if (response.getInResponseTo() == null) {
-			Issuer issuer = null;
+			String issuer = null;
 
-			Issuer issuerFromAssertion = response.getAssertions().isEmpty()
-				? decryptedAssertion.getAssertion().getIssuer()
-				: response.getAssertions().get(0).getIssuer();
+			String issuerFromAssertion = response.getAssertions().isEmpty()
+				? decryptedAssertion.getAssertion().getIssuer().getValue()
+				: response.getAssertions().get(0).getIssuer().getValue();
 
-			Issuer issuerFromResponse = response.getIssuer();
+			String issuerFromResponse = response.getIssuer() != null ? response.getIssuer().getValue() : null;
 
 			issuer = issuerFromAssertion != null ? issuerFromAssertion : issuerFromResponse;
 
@@ -91,13 +91,13 @@ public class OIOResponse extends OIOAbstractResponse {
 
 			if (issuerFromResponse == null) {
 				log.warn("SAML Response does not contain a issuer, this is required for unsolicited Responses (expected issuer: " 
-					+ issuerFromAssertion.getValue() + ")");
+					+ issuerFromAssertion + ")");
 			} else if (!issuerFromResponse.equals(issuerFromAssertion)) {
-				log.warn("Issuer from SAML Response (" + issuerFromResponse.getValue() + ") does not match issuer from SAML Assertion (" 
-					+ issuerFromAssertion.getValue() + "), this is required for unsolicited Responses");
+				log.warn("Issuer from SAML Response (" + issuerFromResponse + ") does not match issuer from SAML Assertion (" 
+					+ issuerFromAssertion + "), this is required for unsolicited Responses");
 			}
 
-			return issuer.getValue();
+			return issuer;
 		}
 
 		return handler.removeEntityIdForRequest(response.getInResponseTo());
