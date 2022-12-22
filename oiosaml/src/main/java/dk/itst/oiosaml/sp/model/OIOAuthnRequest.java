@@ -30,6 +30,8 @@ import org.joda.time.DateTimeZone;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.NameIDPolicy;
 import org.opensaml.saml2.core.RequestedAuthnContext;
+import org.opensaml.saml2.core.RequesterID;
+import org.opensaml.saml2.core.Scoping;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
 import org.opensaml.xml.security.credential.Credential;
 import org.opensaml.xml.validation.ValidationException;
@@ -56,8 +58,12 @@ public class OIOAuthnRequest extends OIORequest {
 		this.request = request;
 		this.relayState = relayState;
 	}
-		
+
 	public static OIOAuthnRequest buildAuthnRequest(String ssoServiceLocation, String spEntityId, String protocolBinding, SessionHandler handler, String relayState, String assertionConsumerUrl, List<String> authnContextClassRefs) {
+		return buildAuthnRequest(ssoServiceLocation, spEntityId, protocolBinding, handler, relayState, assertionConsumerUrl, authnContextClassRefs, null);
+	}
+
+	public static OIOAuthnRequest buildAuthnRequest(String ssoServiceLocation, String spEntityId, String protocolBinding, SessionHandler handler, String relayState, String assertionConsumerUrl, List<String> authnContextClassRefs, String requesterIDScope) {
 		AuthnRequest authnRequest = SAMLUtil.buildXMLObject(AuthnRequest.class);
 
 		authnRequest.setIssuer(SAMLUtil.createIssuer(spEntityId));
@@ -86,6 +92,14 @@ public class OIOAuthnRequest extends OIORequest {
 			authnRequest.setNameIDPolicy(policy);
 		}
 		
+		if (requesterIDScope != null) {
+			Scoping scoping = SAMLUtil.buildXMLObject(Scoping.class);
+			RequesterID requesterID = SAMLUtil.buildXMLObject(RequesterID.class);
+			requesterID.setRequesterID(requesterIDScope);
+			scoping.getRequesterIDs().add(requesterID);
+			authnRequest.setScoping(scoping);
+		}
+
 		try {
 			if (log.isDebugEnabled())
 				log.debug("Validate the authnRequest...");

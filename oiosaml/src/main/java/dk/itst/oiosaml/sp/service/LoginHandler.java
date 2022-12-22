@@ -115,6 +115,10 @@ public class LoginHandler implements SAMLHandler {
 		} else {
 			metadata = idpMetadata.getFirstMetadata();
 		}
+
+		String[] requesterIDs = SAMLUtil.decodeDiscoveryValue(request.getParameter("_saml_sp"));
+		String requesterID = requesterIDs.length == 1 ? requesterIDs[0] : null;
+
 		Audit.log(Operation.DISCOVER, metadata.getEntityID());
 		
 		Endpoint signonLocation = metadata.findLoginEndpoint(conf.getStringArray(Constants.PROP_SUPPORTED_BINDINGS));
@@ -134,8 +138,8 @@ public class LoginHandler implements SAMLHandler {
 		UserAssertionHolder.set(null);
 
 		String relayState = context.getRequest().getParameter(Constants.SAML_RELAYSTATE);
-		
-		OIOAuthnRequest authnRequest = OIOAuthnRequest.buildAuthnRequest(signonLocation.getLocation(), context.getSpMetadata().getEntityID(), context.getSpMetadata().getDefaultAssertionConsumerService().getBinding(), context.getSessionHandler(), relayState, context.getSpMetadata().getDefaultAssertionConsumerService().getLocation(), getContextClassRefs(context));
+
+		OIOAuthnRequest authnRequest = OIOAuthnRequest.buildAuthnRequest(signonLocation.getLocation(), context.getSpMetadata().getEntityID(), context.getSpMetadata().getDefaultAssertionConsumerService().getBinding(), context.getSessionHandler(), relayState, context.getSpMetadata().getDefaultAssertionConsumerService().getLocation(), getContextClassRefs(context), requesterID);
 		authnRequest.setNameIDPolicy(conf.getString(Constants.PROP_NAMEID_POLICY, null), conf.getBoolean(Constants.PROP_NAMEID_POLICY_ALLOW_CREATE, false));
 		authnRequest.setForceAuthn(isForceAuthnEnabled(request, conf));
 
