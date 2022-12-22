@@ -194,7 +194,7 @@ public class OIOSamlObject {
 			validator.validate(signature);
 			return true;
 		} catch (ValidationException e) {
-			log.warn("The signature does not match the signature of the login site", e);
+			log.debug("The signature does not match the signature of the login site", e);
 			return false;
 		}
 	}
