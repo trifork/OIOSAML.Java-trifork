@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.junit.Before;
@@ -70,14 +71,14 @@ public class IdpMetadataTest extends AbstractTests {
 
 	@Test
 	public void testFindSupportedEntity() {
-		Metadata metadata = md.findSupportedEntity("test", "ed2");
+		Metadata metadata = md.findSupportedEntity(Arrays.asList("test", "ed2"));
 		assertNotNull(metadata);
 		assertEquals("ed2", metadata.getEntityID());
 	}
 	
 	@Test
 	public void findSupportedEntityShouldReturnNullOnNoMatch() {
-		assertNull(md.findSupportedEntity("test1", "test2", "test3"));
+		assertNull(md.findSupportedEntity(Arrays.asList("test1", "test2", "test3")));
 	}
 
 	@Test

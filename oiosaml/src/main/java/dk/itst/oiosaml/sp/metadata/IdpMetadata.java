@@ -133,14 +133,17 @@ public class IdpMetadata {
 	}
 
 
-	public Metadata findSupportedEntity(String ... entityIds) {
-		for (String entityId : entityIds) {
+	public Metadata findSupportedEntity(List<String> entityIds) {
+		List<String> origEntityIds = new ArrayList<>(entityIds);
+		while (entityIds.size() > 0) {
+			// Remove entity IDs until we find a match - we will put the remaining in AuthnRequest/Scoping/IdpList
+			String entityId = entityIds.remove(0);
 			Metadata md = metadata.get(entityId);
 			if (md != null) {
 				return md;
 			}
 		}
-		log.debug("No supported idp found in " + Arrays.toString(entityIds) + ". Supported ids: " + metadata.keySet());
+		log.debug("No supported idp found in " + origEntityIds.toString() + ". Supported ids: " + metadata.keySet());
 		return null;
 	}
 

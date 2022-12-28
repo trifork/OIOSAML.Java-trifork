@@ -69,6 +69,8 @@ public class LoginHandler implements SAMLHandler {
 		HttpServletResponse response = context.getResponse();
 		
 		Metadata metadata;
+		String[] idpList = null;
+
 		if (idpMetadata.enableDiscovery()) {
 			log.debug("Discovery profile is active");
 			String samlIdp = request.getParameter(Constants.DISCOVERY_ATTRIBUTE);
@@ -102,8 +104,9 @@ public class LoginHandler implements SAMLHandler {
 					metadata = idpMetadata.getFirstMetadata();
 				}
 			} else {
-				String[] entityIds = SAMLUtil.decodeDiscoveryValue(samlIdp);
-				Audit.log(Operation.DISCOVER, false, "", Arrays.asList(entityIds).toString());
+				List<String> entityIds = new ArrayList<>(Arrays.asList(SAMLUtil.decodeDiscoveryValue(samlIdp)));
+				// String[] entityIds = SAMLUtil.decodeDiscoveryValue(samlIdp);
+				Audit.log(Operation.DISCOVER, false, "", entityIds.toString());
 				metadata = idpMetadata.findSupportedEntity(entityIds);
 				if (metadata != null) {
 					log.debug("Discovered idp " + metadata.getEntityID());
@@ -111,12 +114,18 @@ public class LoginHandler implements SAMLHandler {
 					log.debug("No supported IdP discovered, using first from metadata");
 					metadata = idpMetadata.getFirstMetadata();
 				}
+
+				if (entityIds.size() > 0) {
+					// Add the remaining entity IDs to idpList. 
+					idpList = new String[entityIds.size()];
+					entityIds.toArray(idpList);
+				}
 			}
 		} else {
 			metadata = idpMetadata.getFirstMetadata();
 		}
 
-		String[] requesterIDs = SAMLUtil.decodeDiscoveryValue(request.getParameter("_saml_sp"));
+		String[] requesterIDs = SAMLUtil.decodeDiscoveryValue(request.getParameter("_saml_requester_id"));
 		String requesterID = requesterIDs.length == 1 ? requesterIDs[0] : null;
 
 		Audit.log(Operation.DISCOVER, metadata.getEntityID());
@@ -139,7 +148,7 @@ public class LoginHandler implements SAMLHandler {
 
 		String relayState = context.getRequest().getParameter(Constants.SAML_RELAYSTATE);
 
-		OIOAuthnRequest authnRequest = OIOAuthnRequest.buildAuthnRequest(signonLocation.getLocation(), context.getSpMetadata().getEntityID(), context.getSpMetadata().getDefaultAssertionConsumerService().getBinding(), context.getSessionHandler(), relayState, context.getSpMetadata().getDefaultAssertionConsumerService().getLocation(), getContextClassRefs(context), requesterID);
+		OIOAuthnRequest authnRequest = OIOAuthnRequest.buildAuthnRequest(signonLocation.getLocation(), context.getSpMetadata().getEntityID(), context.getSpMetadata().getDefaultAssertionConsumerService().getBinding(), context.getSessionHandler(), relayState, context.getSpMetadata().getDefaultAssertionConsumerService().getLocation(), getContextClassRefs(context), requesterID, idpList);
 		authnRequest.setNameIDPolicy(conf.getString(Constants.PROP_NAMEID_POLICY, null), conf.getBoolean(Constants.PROP_NAMEID_POLICY_ALLOW_CREATE, false));
 		authnRequest.setForceAuthn(isForceAuthnEnabled(request, conf));
 

@@ -28,6 +28,8 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.opensaml.saml2.core.AuthnRequest;
+import org.opensaml.saml2.core.IDPEntry;
+import org.opensaml.saml2.core.IDPList;
 import org.opensaml.saml2.core.NameIDPolicy;
 import org.opensaml.saml2.core.RequestedAuthnContext;
 import org.opensaml.saml2.core.RequesterID;
@@ -60,10 +62,10 @@ public class OIOAuthnRequest extends OIORequest {
 	}
 
 	public static OIOAuthnRequest buildAuthnRequest(String ssoServiceLocation, String spEntityId, String protocolBinding, SessionHandler handler, String relayState, String assertionConsumerUrl, List<String> authnContextClassRefs) {
-		return buildAuthnRequest(ssoServiceLocation, spEntityId, protocolBinding, handler, relayState, assertionConsumerUrl, authnContextClassRefs, null);
+		return buildAuthnRequest(ssoServiceLocation, spEntityId, protocolBinding, handler, relayState, assertionConsumerUrl, authnContextClassRefs, null, null);
 	}
 
-	public static OIOAuthnRequest buildAuthnRequest(String ssoServiceLocation, String spEntityId, String protocolBinding, SessionHandler handler, String relayState, String assertionConsumerUrl, List<String> authnContextClassRefs, String requesterIDScope) {
+	public static OIOAuthnRequest buildAuthnRequest(String ssoServiceLocation, String spEntityId, String protocolBinding, SessionHandler handler, String relayState, String assertionConsumerUrl, List<String> authnContextClassRefs, String requesterID, String[] idpList) {
 		AuthnRequest authnRequest = SAMLUtil.buildXMLObject(AuthnRequest.class);
 
 		authnRequest.setIssuer(SAMLUtil.createIssuer(spEntityId));
@@ -92,11 +94,25 @@ public class OIOAuthnRequest extends OIORequest {
 			authnRequest.setNameIDPolicy(policy);
 		}
 		
-		if (requesterIDScope != null) {
+		if (requesterID != null || idpList != null) {
 			Scoping scoping = SAMLUtil.buildXMLObject(Scoping.class);
-			RequesterID requesterID = SAMLUtil.buildXMLObject(RequesterID.class);
-			requesterID.setRequesterID(requesterIDScope);
-			scoping.getRequesterIDs().add(requesterID);
+			
+			if (requesterID != null) {
+				RequesterID id = SAMLUtil.buildXMLObject(RequesterID.class);
+				id.setRequesterID(requesterID);
+				scoping.getRequesterIDs().add(id);
+			}
+			
+			if (idpList != null) {
+				IDPList list = SAMLUtil.buildXMLObject(IDPList.class);
+				for (String idp: idpList) {
+					IDPEntry entry = SAMLUtil.buildXMLObject(IDPEntry.class);
+					entry.setProviderID(idp);
+					list.getIDPEntrys().add(entry);
+				}
+				scoping.setIDPList(list);
+			}
+
 			authnRequest.setScoping(scoping);
 		}
 
