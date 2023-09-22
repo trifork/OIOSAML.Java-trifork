@@ -203,6 +203,10 @@ public class FileConfiguration implements SAMLConfiguration {
         if (homeDir == null)
             return false;
 
+        if (systemConfiguration != null) {
+            return true;
+        }
+
         log.info("Config filename: " + homeDir + configurationFileName);
         File config = new File(homeDir + configurationFileName);
 
